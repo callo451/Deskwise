@@ -1,0 +1,125 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Modern gradient colors */
+    --gradient-start: 255 95 120; /* Coral pink */
+    --gradient-mid: 140 82 255; /* Purple */
+    --gradient-end: 70 180 255; /* Sky blue */
+    
+    /* Base colors */
+    --background: 210 40% 98%;
+    --foreground: 222.2 84% 4.9%;
+
+    /* Glassmorphism */
+    --glass-background: 255 255 255;
+    --glass-border: 255 255 255 / 0.15;
+    --glass-shadow: 0 0 0 / 0.05;
+    --glass-blur: 10px;
+
+    /* Card styles */
+    --card: var(--glass-background);
+    --card-foreground: 222.2 84% 4.9%;
+
+    --popover: var(--glass-background);
+    --popover-foreground: 222.2 84% 4.9%;
+
+    /* Primary is now a gradient */
+    --primary: 260 100% 60%;
+    --primary-foreground: 0 0% 100%;
+    --primary-gradient: linear-gradient(135deg, rgb(var(--gradient-start)), rgb(var(--gradient-mid)), rgb(var(--gradient-end)));
+
+    --secondary: 260 20% 96%;
+    --secondary-foreground: 260 30% 30%;
+
+    --muted: 210 20% 97%;
+    --muted-foreground: 215 16% 47%;
+
+    --accent: 260 20% 96%;
+    --accent-foreground: 260 30% 30%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 260 100% 60%;
+
+    --radius: 1rem;
+  }
+
+  .dark {
+    /* Dark mode gradient colors */
+    --gradient-start: 255 95 120; /* Coral pink */
+    --gradient-mid: 140 82 255; /* Purple */
+    --gradient-end: 70 180 255; /* Sky blue */
+    
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    /* Glassmorphism dark */
+    --glass-background: 20 20 40 / 0.7;
+    --glass-border: 255 255 255 / 0.1;
+    --glass-shadow: 0 0 0 / 0.1;
+    --glass-blur: 10px;
+
+    --card: var(--glass-background);
+    --card-foreground: 210 40% 98%;
+
+    --popover: var(--glass-background);
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 260 100% 60%;
+    --primary-foreground: 0 0% 100%;
+    --primary-gradient: linear-gradient(135deg, rgb(var(--gradient-start)), rgb(var(--gradient-mid)), rgb(var(--gradient-end)));
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 260 100% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    background-image: radial-gradient(circle at top right, rgba(var(--gradient-end), 0.15), transparent 40%),
+                     radial-gradient(circle at bottom left, rgba(var(--gradient-start), 0.15), transparent 40%);
+    background-attachment: fixed;
+  }
+}
+
+/* Glassmorphism utilities */
+@layer components {
+  .glass {
+    @apply backdrop-blur-md bg-opacity-70 border border-solid;
+    background-color: rgba(var(--glass-background), 0.7);
+    border-color: rgba(var(--glass-border));
+    box-shadow: 0 4px 30px rgba(var(--glass-shadow));
+  }
+  
+  .gradient-text {
+    @apply text-transparent bg-clip-text;
+    background-image: var(--primary-gradient);
+  }
+  
+  .gradient-bg {
+    background-image: var(--primary-gradient);
+  }
+}

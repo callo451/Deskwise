@@ -1,0 +1,127 @@
+AI Agent Task List: ITSM Platform Development
+Objective: Generate code and configurations for the ITSM Platform based on user prompts and definitions, leveraging the provided React/Tailwind/TS/Vite template with a strong focus on multi-tenant architecture using Supabase. Human oversight will guide architecture, provide prompts, review outputs, and integrate components.
+Phase 1: Foundation & Core Authentication
+Goal: Establish base application structure and authentication, ensuring tenant context is captured.
+Tasks:
+[x] 1.1 Verify Template & Environment:
+  - Created Supabase project "deskwise-itsm" with ID: rqibbynjnfycbuersldk
+  - Configured Supabase connection details in .env file
+  - Installed required dependencies: Supabase SDK, React Router, etc.
+[x] 1.2 Generate Routing:
+  - Implemented React Router with tenant-aware routes
+  - Created protected routes for authenticated users
+  - Added placeholder components for future implementation
+  - Output: Updated App.tsx with routing configuration
+[x] 1.3 Generate UI Shell Components:
+  - Created Header.tsx with authentication status and navigation
+  - Created Sidebar.tsx with role-based menu items
+  - Created MainLayout.tsx to compose the application layout
+  - Output: Components in src/components/layout/
+[x] 1.4 Generate Supabase Auth Integration:
+  - Integrated Supabase Auth SDK
+  - Created SignUpForm.tsx with tenant creation flow
+  - Created SignInForm.tsx with proper error handling
+  - Implemented sign out functionality in Header component
+  - Implemented redirect logic for authenticated/unauthenticated users
+  - Added form validation and error display
+  - Output: Auth components, AuthContext provider
+  - Note: Google and Microsoft SSO to be implemented in future iterations
+[x] 1.5 Generate Initial TypeScript Types:
+  - Created TypeScript interfaces for User, Tenant, Ticket, and other entities
+  - Ensured tenant_id is included in all tenant-specific types
+  - Generated Database type for Supabase type safety
+  - Output: Created src/types/database.ts
+[ ] 1.6 Generate Mermaid ERD Draft (Optional):
+  - Pending: Will be implemented in future iterations
+Phase 2: Data Modeling & Backend Core
+Goal: Generate database schema, tenant-isolating RLS policies, and tenant-aware core data access functions.
+Tasks:
+[x] 2.1 Generate Remaining TypeScript Types:
+  - Created TypeScript interfaces for all entities including Queues, Services, KnowledgeBaseArticles, SLAs
+  - Added tenant_id to all tenant-specific resource types
+  - Created proper type definitions for Supabase operations (Row, Insert, Update)
+  - Output: Comprehensive types in src/types/database.ts
+[x] 2.2 Generate Supabase Schema (SQL):
+  - Created core tables with proper tenant isolation:
+    - tenants: Base table for multi-tenant architecture
+    - users: User profiles with tenant association
+    - tickets: Core ticket management with tenant_id
+    - ticket_history: Audit trail for ticket changes
+    - queues: Ticket organization by department/function
+    - services: Service catalog offerings
+    - knowledge_base_articles: Self-service knowledge repository
+    - slas: Service level agreements
+  - Ensured non-nullable tenant_id columns with proper foreign key references
+  - Output: Applied SQL migrations to Supabase project
+[x] 2.3 Generate RLS Policies (SQL):
+  - Implemented strict tenant isolation policies for all tables
+  - Created policies for SELECT, INSERT, UPDATE operations
+  - Enforced tenant-specific data access based on user's tenant_id
+  - Implemented role-based policies for admin/manager operations
+  - Output: Applied RLS policies to all tables in Supabase
+[x] 2.4 Generate Core API/Client Functions:
+  - Created Supabase client utility in src/lib/supabase.ts
+  - Implemented authentication functions in AuthContext
+  - Created tenant-aware data access patterns
+  - Leveraged RLS for automatic tenant filtering
+  - Output: API utility functions in contexts and components
+Phase 3: Core Frontend Features
+Goal: Generate UI components and integrate them, ensuring all data displayed and manipulated is correctly scoped to the user's tenant.
+Tasks:
+[x] 3.1 Generate Reusable UI Components:
+  - Created Button component with variants using class-variance-authority
+  - Implemented utility functions for class name merging
+  - Created layout components (MainLayout, Header, Sidebar)
+  - Output: UI components in src/components/ui/ and layout components in src/components/layout/
+[x] 3.2 Generate Ticket Dashboard Components:
+  - Created DashboardPage with ticket statistics and recent tickets
+  - Implemented tenant-aware data fetching using RLS
+  - Added placeholder routes for ticket details and creation
+  - Output: Dashboard component in src/pages/DashboardPage.tsx
+  - Note: Detailed ticket components to be implemented in future iterations
+[ ] 3.3 Generate Self-Service Portal Components:
+  - Pending: Will be implemented in future iterations
+[ ] 3.4 Generate Service Catalog Component:
+  - Pending: Will be implemented in future iterations
+[x] 3.5 Generate Frontend RBAC Logic:
+  - Implemented role-based conditional rendering in Sidebar component
+  - Created ProtectedRoute component for route-level access control
+  - Integrated user role checks in components
+  - Output: Role-based UI in Sidebar.tsx and App.tsx
+Phase 4, 5: Supporting & Advanced Features
+Goal: Generate backend and frontend code for remaining features, maintaining strict tenant isolation throughout.
+Tasks:
+[ ] For each feature (KB, SLA, Reporting, Change, Problem, Surveys, Automation, NLP):
+(Multi-Tenancy Note): Apply multi-tenancy principles consistently: Add tenant_id to schemas, enforce via RLS, ensure client functions respect context, and UI only shows tenant-scoped data.
+[ ] 4/5.x.1: Generate/Update TypeScript types (include tenant_id).
+[ ] 4/5.x.2: Generate Supabase Schema SQL (include tenant_id column and FK).
+[ ] 4/5.x.3: Generate Supabase RLS Policy SQL (enforce tenant_id match).
+[ ] 4/5.x.4: Generate API/Client Functions (tenant-aware).
+[ ] 4/5.x.5: Generate Frontend Components (display tenant-scoped data).
+Output: Relevant type, SQL, service, and component files for each feature.
+Phase 6: Testing, Refinement & Documentation
+Goal: Assist in testing (including multi-tenant scenarios) and documentation generation.
+Tasks:
+[ ] 6.1 Generate Unit Tests:
+  - Pending: Will be implemented in future iterations
+[ ] 6.2 Generate E2E Test Outlines:
+  - Pending: Will be implemented in future iterations
+[ ] 6.3 Assist with Code Optimization:
+  - Pending: Will be implemented in future iterations
+[x] 6.4 Generate Documentation:
+  - Created comprehensive README.md with project overview, features, and setup instructions
+  - Added detailed section on multi-tenancy approach using RLS, tenant_id columns, and JWT claims
+  - Added code comments throughout the application
+  - Output: Created README.md and added documentation to code files
+Phase 7: Deployment & Go-Live
+Goal: Assist in generating deployment configurations.
+Tasks:
+[ ] 7.1 Generate Deployment Config Files:
+Receive target hosting provider.
+Generate basic configuration files.
+Output: Config file content.
+[ ] 7.2 Generate CI/CD Workflow Files:
+Receive target CI/CD platform.
+Generate basic workflow YAML file.
+Output: Workflow YAML file content.
+Note: Human review, integration, complex debugging, thorough security validation (especially RLS for tenant isolation), and final deployment steps remain critical user responsibilities throughout the process.

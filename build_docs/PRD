@@ -1,0 +1,67 @@
+Project Name: ITSM Ticket Platform
+Description: A multi-tenant ITIL-compliant ITSM ticket system that facilitates natural language ticket creation, and automated ticket queue management.
+Primary Goals: Streamline IT service management, automate ticket handling, and empower users with a self-service portal while ensuring tenant isolation and adherence to ITIL best practices.
+Tech Stack & Environment
+Frontend: Vite + React + TypeScript + Tailwind CSS
+Backend: Supabase (PostgreSQL + Auth)
+Target Platform: Single-Page Application
+Framework Versions & Config: Latest stable versions
+Requirements & Features
+Core Features:
+Comprehensive ticket management: create, update, assign, and resolve tickets
+Multi-tenant architecture ensuring data segregation and role-based access
+Ability to segment teams with ticket queues
+Customizable service catalog
+Self-service portal for end users to submit and track tickets
+Knowledge Base: Users can search for solutions to common problems before submitting a ticket.
+Service Level Agreement (SLA) Management: Define SLAs, track compliance, and automate escalations.
+Reporting and Analytics: Track key metrics such as ticket volume, resolution times, and customer satisfaction.
+Change Management: Manage the process of making changes to the IT environment.
+Problem Management: Identify the root causes of recurring incidents.
+Survey and Feedback: Users can provide feedback on the ticket resolution process.
+Automation of Routine Tasks: Automate ticket routing, assignment, and closure.
+User Flows: Users sign up/in, browse the service catalog, create or update tickets, search the knowledge base, provide feedback, and managers review ticket statuses, SLA compliance, and reports.
+Business Rules: Only authenticated users from a tenant can access their tickets; priority escalations are automatically triggered based on predefined SLAs; multi-tiered role access for technicians, managers, and administrators.
+UI/UX Design
+Layout: Dashboard-centric layout featuring a sidebar navigation, a central ticket list view, and detailed ticket panels on selection. The layout will incorporate a modern design with light gradients and glassmorphic effects to create a visually appealing and user-friendly interface.
+Look & Feel: Professional, modern, and minimalistic with clear typography, consistent spacing, and a color scheme that reflects ITSM credibility. Glassmorphic elements will be used to add depth and a sense of sophistication, with subtle light gradients enhancing the visual appeal.
+Components: Header and footer bars, navigation menu, service catalog display, ticket cards, detailed ticket view, authentication forms, knowledge base search, survey forms, and a self-service portal. These components will be styled with glassmorphic effects, light gradients, and a modern aesthetic to ensure a cohesive and visually stunning user experience.
+Data Model & Supabase Setup
+Database Schema: Design a schema that includes tables for Tenants, Users, Tickets, TicketHistory, Queues, Services, KnowledgeBaseArticles, SLAs, Reports, Changes, Problems, Surveys, and AutomationRules.
+Row-Level Security: Enabled by default to ensure tenant data isolation and security across all endpoints.
+Auth Requirements: Utilize Supabase Auth for multi-factor authentication, role-based access control, and tenant-specific user management, including Google and Microsoft SSO.
+Granular Implementation Plan
+Page and Routing Structure
+Create application pages: Home, Ticket Dashboard, Self-Service Portal, Service Catalog, Knowledge Base, Reporting, Change Management, Problem Management, and Surveys.
+Set up placeholder components with 'Coming Soon' messages to verify route flows.
+Ensure navigation follows clear, tenant-aware routing requirements.
+UI/UX Implementation
+Establish the base layout including responsive header, footer, and sidebar navigation.
+Implement essential UI components such as buttons, forms, modals, service catalog display, knowledge base search, survey forms, and AI chat boxes, styled with glassmorphic effects and light gradients.
+Maintain consistency with branding guidelines for typography, color scheme, and spacing, incorporating modern design principles.
+Data Model Definition
+Define TypeScript types for core entities: Tenant, User, Ticket, TicketHistory, Queue, Service, KnowledgeBaseArticle, SLA, Report, Change, Problem, Survey, and AutomationRule.
+Draft an ERD using a Mermaid diagram placed in the docs folder to illustrate relationships and data flow.
+Integrate Supabase Auth
+Integrate Supabase Auth to implement sign-up, sign-in, and sign-out flows for users, including Google and Microsoft SSO.
+Configure multi-tenant authentication with different roles (user, technician, manager, admin) and setup redirection after login/logout.
+Embed error handling for invalid credentials and access denials.
+Create Database Tables and Relations
+Define and implement Supabase tables for Tenants, Users, Tickets, TicketHistory, Queues, Services, KnowledgeBaseArticles, SLAs, Reports, Changes, Problems, Surveys, and AutomationRules based on the ERD.
+Establish foreign keys and other relationships to ensure referential integrity.
+Prepare initial seed data if required by business rules.
+Apply RLS (Row-Level Security) Policies
+Enforce RLS policies in Supabase to restrict data access in accordance with tenant-specific roles and permissions.
+Validate security transitions between authenticated and unauthenticated states for all roles.
+API Development
+Design and implement RESTful APIs using Supabase functions to perform CRUD operations on tickets, services, users, queues, knowledge base articles, SLAs, reports, changes, problems, surveys, and automation rules.
+Secure APIs using Supabase's authentication and authorization mechanisms.
+Document API endpoints, request/response formats, and authentication methods.
+Integrate Real Data and Final Logic
+Integrate Supabase queries and API calls to dynamically load tickets, services, knowledge base articles, SLAs, reports, changes, problems, and surveys.
+Implement business logic for SLA management, change management workflows, problem management processes, survey processing, and automation rule execution.
+Address edge cases like empty state views, network errors, and real-time updates.
+Update Documentation
+Update the README with detailed project structure, installation steps, API documentation, and usage instructions.
+Revise diagrams and documentation to accurately reflect data flows, authentication mechanisms, and API endpoints.
+Compile all changes and ensure the documentation is clear for future developers and maintainers.
