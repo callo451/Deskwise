@@ -10,6 +10,22 @@ export interface QueueItem {
   updated_at: string;
 }
 
+export interface QueueAssignment {
+  id: string;
+  queue_id: string;
+  user_id: string;
+  tenant_id: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface QueueUser {
+  id: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+}
+
 /**
  * Fetch all queues for the current tenant
  */
@@ -160,4 +176,107 @@ export const getQueueTickets = async (queueId: string, options: {
   }
 
   return { tickets: data, count };
+};
+
+/**
+ * Get users assigned to a queue
+ */
+export const getQueueAssignments = async (queueId: string) => {
+  const { data, error } = await supabase
+    .from('queue_assignments')
+    .select(`
+      *,
+      user:users(id, email, first_name, last_name)
+    `)
+    .eq('queue_id', queueId);
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+};
+
+/**
+ * Assign a user to a queue
+ */
+export const assignUserToQueue = async (queueId: string, userId: string) => {
+  // Get user's tenant_id
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError) throw userError;
+
+  const { data: userDetails, error: userDetailsError } = await supabase
+    .from('users')
+    .select('tenant_id')
+    .eq('id', userData.user.id)
+    .single();
+  
+  if (userDetailsError) throw userDetailsError;
+
+  const { data, error } = await supabase
+    .from('queue_assignments')
+    .insert({
+      queue_id: queueId,
+      user_id: userId,
+      tenant_id: userDetails.tenant_id
+    })
+    .select()
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return data as QueueAssignment;
+};
+
+/**
+ * Remove a user from a queue
+ */
+export const removeUserFromQueue = async (assignmentId: string) => {
+  const { error } = await supabase
+    .from('queue_assignments')
+    .delete()
+    .eq('id', assignmentId);
+
+  if (error) {
+    throw error;
+  }
+
+  return true;
+};
+
+/**
+ * Get all available users that can be assigned to queues
+ */
+export const getAvailableUsers = async () => {
+  const { data, error } = await supabase
+    .from('users')
+    .select('id, email, first_name, last_name')
+    .order('first_name', { ascending: true });
+
+  if (error) {
+    throw error;
+  }
+
+  return data as QueueUser[];
+};
+
+/**
+ * Get queues assigned to a user
+ */
+export const getUserQueues = async (userId: string) => {
+  const { data, error } = await supabase
+    .from('queue_assignments')
+    .select(`
+      *,
+      queue:queues(id, name, description, is_active)
+    `)
+    .eq('user_id', userId);
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
 };

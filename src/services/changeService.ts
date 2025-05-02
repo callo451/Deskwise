@@ -781,6 +781,7 @@ export const getChangeApprovals = async (changeId: string) => {
 export const createChangeApproval = async (approvalData: {
   change_id: string;
   approver_id: string;
+  tenant_id: string;
   status: 'pending' | 'approved' | 'rejected';
   comments?: string | null;
 }) => {
@@ -839,109 +840,7 @@ export const getChangeProblemLinks = async (changeId: string) => {
   return data || [];
 };
 
-export const linkChangeToTicket = async (changeId: string, ticketId: string) => {
-  const { data, error } = await supabase
-    .from('change_ticket_links')
-    .insert({
-      change_id: changeId,
-      ticket_id: ticketId,
-      created_at: new Date().toISOString()
-    })
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
-};
-
-export const linkChangeToProblem = async (changeId: string, problemId: string) => {
-  const { data, error } = await supabase
-    .from('change_problem_links')
-    .insert({
-      change_id: changeId,
-      problem_id: problemId,
-      created_at: new Date().toISOString()
-    })
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
-};
-
-export const unlinkChangeFromTicket = async (linkId: string) => {
-  const { error } = await supabase
-    .from('change_ticket_links')
-    .delete()
-    .eq('id', linkId);
-
-  if (error) throw error;
-  return true;
-};
-
-export const unlinkChangeFromProblem = async (linkId: string) => {
-  const { error } = await supabase
-    .from('change_problem_links')
-    .delete()
-    .eq('id', linkId);
-
-  if (error) throw error;
-  return true;
-};
-
-// Original implementation
-export const updateChangeSchedule_original = async (
-  scheduleId: string,
-  scheduleData: {
-    scheduled_start?: string;
-    scheduled_end?: string;
-    maintenance_window?: boolean;
-    notification_sent?: boolean;
-  }
-) => {
-  const { data: schedule } = await supabase
-    .from('change_schedules')
-    .select('*')
-    .eq('id', scheduleId)
-    .single();
-
-  const { data, error } = await supabase
-    .from('change_schedules')
-    .update(scheduleData)
-    .eq('id', scheduleId)
-    .select()
-    .single();
-
-  if (error) {
-    throw error;
-  }
-
-  // Create history entry if dates changed
-  if (scheduleData.scheduled_start !== schedule.scheduled_start || 
-      scheduleData.scheduled_end !== schedule.scheduled_end) {
-    await createChangeHistory(
-      schedule.change_id,
-      'schedule_updated',
-      { 
-        from: {
-          scheduled_start: schedule.scheduled_start,
-          scheduled_end: schedule.scheduled_end
-        },
-        to: {
-          scheduled_start: scheduleData.scheduled_start || schedule.scheduled_start,
-          scheduled_end: scheduleData.scheduled_end || schedule.scheduled_end
-        }
-      }
-    );
-  }
-
-  return data;
-};
-
-/**
- * Links a ticket to a change
- */
-export const linkTicketToChange = async (changeId: string, ticketId: string, userId: string) => {
+export const linkChangeToTicket = async (changeId: string, ticketId: string, userId: string) => {
   // Get the user's tenant_id
   const { data: userDetails, error: userDetailsError } = await supabase
     .from('users')

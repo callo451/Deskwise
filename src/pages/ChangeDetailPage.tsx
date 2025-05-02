@@ -13,6 +13,7 @@ import ChangeDetailTabs from '../components/changes/ChangeDetailTabs';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import ErrorDisplay from '../components/ui/ErrorDisplay';
 import { Button } from '../components/ui/Button';
+import { getButtonColorClass } from '../components/ui/ButtonVariants';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 
 const ChangeDetailPage: React.FC = () => {
@@ -147,15 +148,37 @@ const ChangeDetailPage: React.FC = () => {
       </Helmet>
       
       <div className="container mx-auto px-4 py-6">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleBack}
-          className="mb-4 flex items-center"
-        >
-          <ArrowLeftIcon className="h-4 w-4 mr-1" />
-          Back to Changes
-        </Button>
+        <div className="flex items-center mb-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleBack}
+            className="flex items-center mr-2"
+          >
+            <ArrowLeftIcon className="h-4 w-4 mr-1" />
+            Back to Changes
+          </Button>
+          
+          {change.status === 'submitted' && (userDetails?.role === 'admin' || userDetails?.role === 'manager') && (
+            <>
+              <Button
+                variant="default" 
+                size="sm" 
+                onClick={() => handleStatusChange('assessment')}
+                className={`mr-2 ${getButtonColorClass('primary')}`}
+              >
+                Start Assessment
+              </Button>
+              <Button
+                variant="destructive" 
+                size="sm" 
+                onClick={() => handleStatusChange('rejected')}
+              >
+                Reject Change
+              </Button>
+            </>
+          )}
+        </div>
         
         <div className="bg-white rounded-md shadow-sm">
           <ChangeDetailHeader

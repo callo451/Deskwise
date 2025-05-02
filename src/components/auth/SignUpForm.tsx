@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../ui/Button';
 import { supabase } from '../../lib/supabase';
+import { provisionDefaultServiceCatalog } from '../../services/serviceCatalogService';
+import { provisionDefaultTicketSettings } from '../../services/settingsService';
 
 const SignUpForm: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -57,7 +59,23 @@ const SignUpForm: React.FC = () => {
           
         throw signUpError;
       }
-      
+
+      // ---- Provision Default Service Catalog & Ticket Settings ----
+      try {
+        console.log(`Attempting provisioning for tenant: ${tenantData.id}`);
+        // Run provisioning tasks concurrently
+        await Promise.all([
+          provisionDefaultServiceCatalog(tenantData.id),
+          provisionDefaultTicketSettings(tenantData.id)
+        ]);
+        console.log(`Successfully completed provisioning for tenant: ${tenantData.id}`);
+      } catch (provisionError: any) {
+        // Log the error, but allow sign-up to proceed for now
+        console.error('Failed during provisioning defaults:', provisionError);
+        // Optionally: Add more robust error handling, like notifying admins or queuing retry
+      }
+      // --------------------------------------------------------
+
       // Success - redirect to verification page
       navigate('/verification', { state: { email } });
       

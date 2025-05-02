@@ -6,6 +6,7 @@ import {
   updateKnowledgeBaseArticle,
   getKnowledgeBaseCategories
 } from '../services/knowledgeBaseService';
+import { generateKnowledgeBaseArticle } from '../services/aiService';
 import { 
   ArrowLeftIcon, 
   TagIcon,
@@ -13,13 +14,24 @@ import {
   XMarkIcon
 } from '@heroicons/react/24/outline';
 import { Button } from '../components/ui/Button';
+import RichTextEditor from '../components/editor/RichTextEditor';
+import AIArticleGenerator from '../components/editor/AIArticleGenerator';
+import { toast } from 'react-hot-toast';
+
+interface Article {
+  title: string;
+  content: string;
+  category_id: string;
+  tags: string[];
+  is_published: boolean;
+}
 
 const KnowledgeBaseEditorPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const isEditMode = Boolean(id);
   
-  const [article, setArticle] = useState<any>({
+  const [article, setArticle] = useState<Article>({
     title: '',
     content: '',
     category_id: '',
@@ -29,6 +41,7 @@ const KnowledgeBaseEditorPage: React.FC = () => {
   const [categories, setCategories] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [tagInput, setTagInput] = useState('');
   
@@ -72,15 +85,22 @@ const KnowledgeBaseEditorPage: React.FC = () => {
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setArticle(prev => ({
+    setArticle((prev: Article) => ({
       ...prev,
       [name]: value,
     }));
   };
   
+  const handleContentChange = (content: string) => {
+    setArticle((prev: Article) => ({
+      ...prev,
+      content,
+    }));
+  };
+  
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, checked } = e.target;
-    setArticle(prev => ({
+    setArticle((prev: Article) => ({
       ...prev,
       [name]: checked,
     }));
@@ -88,7 +108,7 @@ const KnowledgeBaseEditorPage: React.FC = () => {
   
   const addTag = () => {
     if (tagInput.trim() && !article.tags.includes(tagInput.trim())) {
-      setArticle(prev => ({
+      setArticle((prev: Article) => ({
         ...prev,
         tags: [...prev.tags, tagInput.trim()],
       }));
@@ -97,7 +117,7 @@ const KnowledgeBaseEditorPage: React.FC = () => {
   };
   
   const removeTag = (tagToRemove: string) => {
-    setArticle(prev => ({
+    setArticle((prev: Article) => ({
       ...prev,
       tags: prev.tags.filter((tag: string) => tag !== tagToRemove),
     }));
@@ -118,16 +138,53 @@ const KnowledgeBaseEditorPage: React.FC = () => {
     try {
       if (isEditMode && id) {
         await updateKnowledgeBaseArticle(id, article);
+        toast.success('Article updated successfully');
         navigate(`/knowledge-base/article/${id}`);
       } else {
         const newArticle = await createKnowledgeBaseArticle(article);
+        toast.success('Article created successfully');
         navigate(`/knowledge-base/article/${newArticle.id}`);
       }
     } catch (err: any) {
       console.error('Error saving article:', err);
       setError(err.message || 'Failed to save article');
+      toast.error('Failed to save article');
     } finally {
       setIsSaving(false);
+    }
+  };
+  
+  const handleGenerateArticle = async (request: {
+    prompt: string;
+    options: {
+      includeTitle: boolean;
+      includeContent: boolean;
+      includeCategory: boolean;
+      includeTags: boolean;
+    };
+  }) => {
+    setIsGenerating(true);
+    setError(null);
+    
+    try {
+      const generatedArticle = await generateKnowledgeBaseArticle(request, categories);
+      
+      // Update the article with the generated content
+      setArticle((prev: any) => ({
+        ...prev,
+        ...(request.options.includeTitle && { title: generatedArticle.title }),
+        ...(request.options.includeContent && { content: generatedArticle.content }),
+        ...(request.options.includeCategory && { category_id: generatedArticle.category_id }),
+        ...(request.options.includeTags && { tags: generatedArticle.tags }),
+      }));
+      
+      toast.success('Article generated successfully');
+    } catch (err: any) {
+      console.error('Error generating article:', err);
+      setError(err.message || 'Failed to generate article');
+      toast.error('Failed to generate article');
+    } finally {
+      setIsGenerating(false);
     }
   };
   
@@ -166,6 +223,12 @@ const KnowledgeBaseEditorPage: React.FC = () => {
           {error}
         </div>
       )}
+      
+      <AIArticleGenerator 
+        categories={categories}
+        onGenerate={handleGenerateArticle}
+        isGenerating={isGenerating}
+      />
       
       <div className="bg-white shadow rounded-lg overflow-hidden">
         <form onSubmit={handleSubmit} className="p-6">
@@ -210,18 +273,16 @@ const KnowledgeBaseEditorPage: React.FC = () => {
               <label htmlFor="content" className="block text-sm font-medium text-gray-700 mb-1">
                 Content
               </label>
-              <textarea
-                id="content"
-                name="content"
-                required
-                rows={15}
-                className="w-full rounded-md border border-gray-300 shadow-sm px-4 py-2"
-                value={article.content}
-                onChange={handleChange}
-                placeholder="Article content (supports HTML formatting)"
-              ></textarea>
+              <div className="border border-gray-300 rounded-md shadow-sm">
+                <RichTextEditor 
+                  content={article.content}
+                  onChange={handleContentChange}
+                  placeholder="Start writing your article content..."
+                  className="min-h-[300px] px-4 py-2"
+                />
+              </div>
               <p className="mt-1 text-xs text-gray-500">
-                HTML formatting is supported. You can use tags like &lt;h1&gt;, &lt;p&gt;, &lt;ul&gt;, &lt;li&gt;, &lt;a&gt;, etc.
+                Use the toolbar to format your content. You can add headings, lists, links, images, and more.
               </p>
             </div>
             
@@ -299,7 +360,7 @@ const KnowledgeBaseEditorPage: React.FC = () => {
               </Button>
               <Button
                 type="submit"
-                disabled={isSaving}
+                disabled={isSaving || isGenerating}
                 className="flex items-center"
               >
                 <DocumentTextIcon className="h-5 w-5 mr-1" />

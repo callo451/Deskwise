@@ -3,15 +3,18 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { getTicketById, updateTicket } from '../../services/ticketService';
 import { getTicketPriorities, getTicketStatuses, getTicketCategories } from '../../services/settingsService';
 import { getSLAStatusDisplay } from '../../services/slaService';
+import { fetchTicketIdSettings } from '../../services/ticketSettingsService';
+import { generateTicketSummary } from '../../services/aiService';
 import { Ticket, TicketHistory } from '../../types/database';
 import TicketComments from './TicketComments';
+import { formatTicketIdWithSettings } from '../../utils/ticketIdFormatter';
 
 interface TicketHistoryWithChanges extends TicketHistory {
   changes?: Record<string, { from?: any; to?: any } | any>;
 }
 import { Button } from '../ui/Button';
 import { useAuth } from '../../contexts/AuthContext';
-import { ClockIcon, UserIcon, TagIcon, FolderIcon, ChatBubbleLeftRightIcon, DocumentTextIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
+import { ArrowPathIcon, SparklesIcon, ChevronUpIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 
 interface TicketDetailProps {
   onBack?: () => void;
@@ -83,11 +86,23 @@ const TicketDetail: React.FC<TicketDetailProps> = ({ onBack }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<'details' | 'history' | 'comments'>('details');
+  const [formattedTicketId, setFormattedTicketId] = useState<string>('');
+  
+  // AI Summary state
+  const [showAiSummary, setShowAiSummary] = useState(false);
+  const [aiSummary, setAiSummary] = useState<string>('');
+  const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
+  const [summaryError, setSummaryError] = useState<string | null>(null);
   
   // Settings state
   const [priorities, setPriorities] = useState<any[]>([]);
   const [statuses, setStatuses] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
+  const [ticketIdSettings, setTicketIdSettings] = useState<{
+    prefix: string;
+    suffix: string;
+    padding_length: number;
+  } | null>(null);
   
   // Edit form state
   const [editedTicket, setEditedTicket] = useState<{
@@ -110,8 +125,21 @@ const TicketDetail: React.FC<TicketDetailProps> = ({ onBack }) => {
     if (id) {
       fetchTicket();
       fetchSettings();
+      if (userDetails?.tenant_id) {
+        fetchTicketIdSettings(userDetails.tenant_id)
+          .then(settings => {
+            if (settings) {
+              setTicketIdSettings({
+                prefix: settings.prefix,
+                suffix: settings.suffix,
+                padding_length: settings.padding_length
+              });
+            }
+          })
+          .catch(err => console.error('Error fetching ticket ID settings:', err));
+      }
     }
-  }, [id]);
+  }, [id, userDetails?.tenant_id]);
   
   const fetchSettings = async () => {
     try {
@@ -138,8 +166,16 @@ const TicketDetail: React.FC<TicketDetailProps> = ({ onBack }) => {
         category_id: ticket.category_id || null,
         assigned_to: ticket.assigned_to,
       });
+      
+      // Format the ticket ID if settings are available
+      if (ticketIdSettings && ticket.id) {
+        const formatted = formatTicketIdWithSettings(ticket.id, ticketIdSettings);
+        setFormattedTicketId(formatted);
+      } else {
+        setFormattedTicketId(ticket.id.substring(0, 8));
+      }
     }
-  }, [ticket]);
+  }, [ticket, ticketIdSettings]);
 
   const fetchTicket = async () => {
     if (!id) return;
@@ -155,6 +191,24 @@ const TicketDetail: React.FC<TicketDetailProps> = ({ onBack }) => {
       setError(err.message || 'Failed to fetch ticket');
     } finally {
       setIsLoading(false);
+    }
+  };
+  
+  const handleGenerateSummary = async () => {
+    if (!ticket) return;
+    
+    setIsGeneratingSummary(true);
+    setSummaryError(null);
+    
+    try {
+      const summary = await generateTicketSummary(ticket);
+      setAiSummary(summary);
+      setShowAiSummary(true);
+    } catch (err: any) {
+      console.error('Error generating AI summary:', err);
+      setSummaryError(err.message || 'Failed to generate summary');
+    } finally {
+      setIsGeneratingSummary(false);
     }
   };
 
@@ -244,19 +298,85 @@ const TicketDetail: React.FC<TicketDetailProps> = ({ onBack }) => {
           <Button variant="outline" size="sm" onClick={handleBack} className="mr-4">
             Back
           </Button>
-          <h2 className="text-xl font-semibold text-gray-900">
-            {isEditing ? 'Edit Ticket' : ticket.title}
-          </h2>
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900">
+              {isEditing ? 'Edit Ticket' : ticket.title}
+            </h2>
+            <p className="text-sm text-gray-500 mt-1">Ticket #{formattedTicketId}</p>
+          </div>
         </div>
         
-        {!isEditing && canEdit && (
-          <Button onClick={() => setIsEditing(true)}>
-            Edit Ticket
-          </Button>
-        )}
+        <div className="flex items-center space-x-2">
+          {!isGeneratingSummary && !aiSummary && (
+            <Button 
+              onClick={handleGenerateSummary}
+              className="flex items-center space-x-1 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white shadow-md hover:shadow-lg transition-all duration-200"
+              size="sm"
+            >
+              <SparklesIcon className="h-4 w-4" />
+              <span>AI Summary</span>
+            </Button>
+          )}
+          
+          {!isEditing && canEdit && (
+            <Button onClick={() => setIsEditing(true)}>
+              Edit Ticket
+            </Button>
+          )}
+        </div>
       </div>
       
       <div className="p-6">
+        {/* AI Summary Widget - Always visible when generated */}
+        {(isGeneratingSummary || aiSummary || summaryError) && (
+          <div className="mb-6">
+            <div className="bg-gradient-to-r from-gray-800 to-gray-900 p-4 rounded-lg border border-indigo-500/30 shadow-lg overflow-hidden transition-all duration-300 relative">
+              {isGeneratingSummary ? (
+                <div className="flex items-center justify-center space-x-2 py-2 text-gray-300">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-indigo-400"></div>
+                  <p>Generating AI summary...</p>
+                </div>
+              ) : summaryError ? (
+                <div className="text-red-400 p-2">
+                  <p>Error: {summaryError}</p>
+                  <Button 
+                    onClick={handleGenerateSummary} 
+                    variant="outline"
+                    size="sm"
+                    className="mt-2 border-red-400 text-red-400 hover:bg-red-400/10"
+                  >
+                    Retry
+                  </Button>
+                </div>
+              ) : aiSummary ? (
+                <div className="text-gray-100">
+                  <div className="flex justify-between items-center mb-2">
+                    <div className="flex items-center">
+                      <SparklesIcon className="h-5 w-5 text-indigo-400 mr-2" />
+                      <h4 className="font-medium text-indigo-300">AI Generated Summary</h4>
+                    </div>
+                    <button 
+                      onClick={() => setShowAiSummary(!showAiSummary)}
+                      className="text-gray-400 hover:text-white transition-colors"
+                    >
+                      {showAiSummary ? (
+                        <ChevronUpIcon className="h-5 w-5" />
+                      ) : (
+                        <ChevronDownIcon className="h-5 w-5" />
+                      )}
+                    </button>
+                  </div>
+                  <div className={`overflow-hidden transition-all duration-300 ${showAiSummary ? 'max-h-96' : 'max-h-0'}`}>
+                    <div className="prose prose-invert prose-sm max-w-none text-gray-300">
+                      <p className="whitespace-pre-wrap">{aiSummary}</p>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          </div>
+        )}
+        
         {isEditing ? (
           <div className="space-y-4">
             <div>
@@ -386,6 +506,12 @@ const TicketDetail: React.FC<TicketDetailProps> = ({ onBack }) => {
                 <h3 className="text-lg font-medium text-gray-900 mb-2">Details</h3>
                 <div className="bg-gray-50 p-4 rounded-md">
                   <dl className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2">
+                    <div className="sm:col-span-1">
+                      <dt className="text-sm font-medium text-gray-500">Ticket ID</dt>
+                      <dd className="mt-1 text-sm text-gray-900">
+                        {formattedTicketId}
+                      </dd>
+                    </div>
                     <div className="sm:col-span-1">
                       <dt className="text-sm font-medium text-gray-500">Status</dt>
                       <dd className="mt-1">
@@ -613,6 +739,8 @@ const TicketDetail: React.FC<TicketDetailProps> = ({ onBack }) => {
                 </div>
               </div>
             )}
+            
+
             
             <div>
               <h3 className="text-lg font-medium text-gray-900 mb-2">Description</h3>

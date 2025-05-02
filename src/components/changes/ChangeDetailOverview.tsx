@@ -163,27 +163,7 @@ const ChangeDetailOverview: React.FC<ChangeDetailOverviewProps> = ({
         break;
         
       case 'submitted':
-        if (['admin', 'manager'].includes(userDetails?.role || '')) {
-          buttons.push(
-            <Button
-              variant="default" 
-              size="sm" 
-              onClick={() => onStatusChange('assessment')}
-              className={getButtonColorClass('primary')}
-            >
-              Start Assessment
-            </Button>
-          );
-          buttons.push(
-            <Button
-              variant="destructive" 
-              size="sm" 
-              onClick={() => onStatusChange('rejected')}
-            >
-              Reject Change
-            </Button>
-          );
-        }
+        // Buttons moved to the top of the page in ChangeDetailPage.tsx
         break;
         
       case 'assessment':

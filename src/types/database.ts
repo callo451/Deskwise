@@ -73,6 +73,7 @@ export interface User {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  profile_id?: string | null;
 }
 
 export interface Ticket {

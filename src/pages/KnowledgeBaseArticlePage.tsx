@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { 
   getKnowledgeBaseArticleById, 
   recordArticleView, 
@@ -19,10 +19,11 @@ import {
   PencilIcon
 } from '@heroicons/react/24/outline';
 import { Button } from '../components/ui/Button';
+import HtmlContent from '../components/content/HtmlContent';
+import '../components/content/HtmlContent.css';
 
 const KnowledgeBaseArticlePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
   const { userDetails } = useAuth();
   
   const [article, setArticle] = useState<any | null>(null);
@@ -188,7 +189,10 @@ const KnowledgeBaseArticlePage: React.FC = () => {
             )}
           </div>
           
-          <div className="prose max-w-none mb-8" dangerouslySetInnerHTML={{ __html: article.content }} />
+          <HtmlContent 
+            content={article.content}
+            className="mb-8"
+          />
           
           {linkedTickets.length > 0 && (
             <div className="mt-8 border-t border-gray-200 pt-6">

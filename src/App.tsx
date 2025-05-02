@@ -28,6 +28,8 @@ import KnowledgeBaseCategoriesPage from './pages/KnowledgeBaseCategoriesPage';
 import ReportsPage from './pages/ReportsPage';
 import SelfServicePortalPage from './pages/SelfServicePortalPage';
 import ServiceRequestPage from './pages/ServiceRequestPage';
+import SearchResultsPage from './pages/SearchResultsPage';
+import StatusPageSettingsPage from './pages/StatusPageSettingsPage';
 
 // ITIL Service Management Modules
 import ProblemsPage from './pages/ProblemsPage';
@@ -41,6 +43,7 @@ const ImprovementDetailPage = React.lazy(() => import('./pages/ImprovementDetail
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, isLoading } = useAuth();
+  console.log('ProtectedRoute render:', { isLoading, user });
   
   if (isLoading) {
     return (
@@ -83,6 +86,11 @@ function App() {
                 <TicketsPage />
               </ProtectedRoute>
             } />
+            <Route path="tickets/queue/:queueId" element={
+              <ProtectedRoute>
+                <TicketsPage />
+              </ProtectedRoute>
+            } />
             <Route path="tickets/new" element={
               <ProtectedRoute>
                 <CreateTicketPage />
@@ -105,6 +113,11 @@ function App() {
             } />
             <Route path="portal" element={
               <SelfServicePortalPage />
+            } />
+            <Route path="search" element={
+              <ProtectedRoute>
+                <SearchResultsPage />
+              </ProtectedRoute>
             } />
             <Route path="knowledge-base" element={
               <ProtectedRoute>
@@ -154,6 +167,16 @@ function App() {
             <Route path="settings/service-catalog" element={
               <ProtectedRoute>
                 <SettingsPage activeTab="service-catalog" />
+              </ProtectedRoute>
+            } />
+            <Route path="settings/workflow-automation" element={
+              <ProtectedRoute>
+                <SettingsPage activeTab="workflow-automation" />
+              </ProtectedRoute>
+            } />
+            <Route path="settings/status-page" element={
+              <ProtectedRoute>
+                <StatusPageSettingsPage />
               </ProtectedRoute>
             } />
             <Route path="settings/users" element={

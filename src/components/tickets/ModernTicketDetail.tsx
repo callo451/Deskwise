@@ -3,12 +3,15 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { getTicketById, updateTicket } from '../../services/ticketService';
 import { getTicketPriorities, getTicketStatuses, getTicketCategories } from '../../services/settingsService';
 import { getSLAStatusDisplay } from '../../services/slaService';
+
+import { generateTicketSummary } from '../../services/aiService';
 import { fetchUsers } from '../../services/userService';
 import { getQueues } from '../../services/queueService';
 import { Ticket, TicketHistory } from '../../types/database';
 import TicketComments from './TicketComments';
 import TicketKnowledgeBase from '../knowledge/TicketKnowledgeBase';
 import { Button } from '../ui/Button';
+import ReactMarkdown from 'react-markdown';
 import { useAuth } from '../../contexts/AuthContext';
 import { 
   ClockIcon, 
@@ -25,7 +28,10 @@ import {
   ClipboardDocumentListIcon,
   ExclamationCircleIcon,
   InformationCircleIcon,
-  BookOpenIcon
+  BookOpenIcon,
+  SparklesIcon,
+  ChevronUpIcon,
+  ChevronDownIcon
 } from '@heroicons/react/24/outline';
 
 interface TicketHistoryWithChanges extends TicketHistory {
@@ -102,6 +108,14 @@ const ModernTicketDetail: React.FC<TicketDetailProps> = ({ onBack }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<'details' | 'history' | 'comments' | 'knowledge'>('details');
+  
+  // AI Summary state
+  const [showAiSummary, setShowAiSummary] = useState(false);
+  const [aiSummary, setAiSummary] = useState<string | null>(null);
+  const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
+  const [summaryError, setSummaryError] = useState<string | null>(null);
+  
+
   
   // Settings state
   const [priorities, setPriorities] = useState<any[]>([]);
@@ -194,6 +208,26 @@ const ModernTicketDetail: React.FC<TicketDetailProps> = ({ onBack }) => {
       setIsLoading(false);
     }
   };
+  
+  const handleGenerateSummary = async () => {
+    if (!ticket) return;
+    
+    setIsGeneratingSummary(true);
+    setSummaryError(null);
+    
+    try {
+      const summary = await generateTicketSummary(ticket);
+      setAiSummary(summary);
+      setShowAiSummary(true);
+    } catch (err: any) {
+      console.error('Error generating AI summary:', err);
+      setSummaryError(err.message || 'Failed to generate summary');
+    } finally {
+      setIsGeneratingSummary(false);
+    }
+  };
+
+
 
   const handleEditChange = (field: string, value: any) => {
     setEditedTicket(prev => ({
@@ -331,6 +365,17 @@ const ModernTicketDetail: React.FC<TicketDetailProps> = ({ onBack }) => {
           </div>
           
           <div className="flex items-center space-x-2">
+            {!isGeneratingSummary && !aiSummary && (
+              <Button 
+                onClick={handleGenerateSummary}
+                className="flex items-center space-x-1 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white shadow-md hover:shadow-lg transition-all duration-200 mr-2"
+                size="sm"
+              >
+                <SparklesIcon className="h-4 w-4 mr-1" />
+                AI Summary
+              </Button>
+            )}
+            
             {!isEditing && canEdit && (
               <Button 
                 variant="outline" 
@@ -386,6 +431,57 @@ const ModernTicketDetail: React.FC<TicketDetailProps> = ({ onBack }) => {
       
       {/* Main content area */}
       <div className="p-6">
+        {(isGeneratingSummary || aiSummary || summaryError) && (
+          <div className="mb-6">
+            <div className="bg-gradient-to-r from-gray-800 to-gray-900 p-4 rounded-lg border border-indigo-500/30 shadow-lg overflow-hidden transition-all duration-300 relative">
+              {isGeneratingSummary ? (
+                <div className="flex items-center justify-center space-x-2 py-2 text-gray-300">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-indigo-400"></div>
+                  <p>Generating AI summary...</p>
+                </div>
+              ) : summaryError ? (
+                <div className="text-red-400 p-2">
+                  <p>Error: {summaryError}</p>
+                  <Button 
+                    onClick={handleGenerateSummary} 
+                    variant="outline"
+                    size="sm"
+                    className="mt-2 border-red-400 text-red-400 hover:bg-red-400/10"
+                  >
+                    Retry
+                  </Button>
+                </div>
+              ) : aiSummary ? (
+                <div className="text-gray-100">
+                  <div className="flex justify-between items-center mb-2">
+                    <div className="flex items-center">
+                      <SparklesIcon className="h-5 w-5 text-indigo-400 mr-2" />
+                      <h4 className="font-medium text-indigo-300">AI Generated Summary</h4>
+                    </div>
+                    <button 
+                      onClick={() => setShowAiSummary(!showAiSummary)}
+                      className="text-gray-400 hover:text-white transition-colors"
+                    >
+                      {showAiSummary ? (
+                        <ChevronUpIcon className="h-5 w-5" />
+                      ) : (
+                        <ChevronDownIcon className="h-5 w-5" />
+                      )}
+                    </button>
+                  </div>
+                  <div className={`overflow-hidden transition-all duration-300 ${showAiSummary ? 'max-h-96' : 'max-h-0'}`}>
+                    <div className="prose prose-invert prose-sm max-w-none text-gray-300 whitespace-pre-wrap">
+                      <ReactMarkdown>
+                        {aiSummary}
+                      </ReactMarkdown>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          </div>
+        )}
+        
         {isEditing ? (
           <div className="space-y-6 bg-white p-6 rounded-lg border border-gray-200">
             <h3 className="text-lg font-medium text-gray-900 mb-4">Edit Ticket</h3>

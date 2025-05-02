@@ -129,34 +129,69 @@ const Sidebar: React.FC = () => {
           to="/tickets"
           label="Tickets"
           icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" /></svg>}
-        />
+          defaultOpen={location.pathname.startsWith('/tickets')}
+        >
+          {isLoadingQueues ? (
+            <div className="px-4 py-2 text-sm text-gray-500">Loading queues...</div>
+          ) : (
+            <>
+              <Link
+                to="/tickets"
+                className={cn(
+                  'flex items-center px-4 py-2 text-sm rounded-md transition-colors',
+                  location.pathname === '/tickets'
+                    ? 'bg-primary/10 text-primary font-medium'
+                    : 'text-gray-600 hover:bg-gray-100'
+                )}
+              >
+                <span className="w-2 h-2 rounded-full bg-gray-400 mr-2"></span>
+                All Tickets
+              </Link>
+              {queues.map((queue) => (
+                <Link
+                  key={queue.id}
+                  to={`/tickets/queue/${queue.id}`}
+                  className={cn(
+                    'flex items-center px-4 py-2 text-sm rounded-md transition-colors',
+                    location.pathname === `/tickets/queue/${queue.id}`
+                      ? 'bg-primary/10 text-primary font-medium'
+                      : 'text-gray-600 hover:bg-gray-100'
+                  )}
+                >
+                  <span className="w-2 h-2 rounded-full bg-gray-400 mr-2"></span>
+                  {queue.name}
+                </Link>
+              ))}
+            </>
+          )}
+        </NavItem>
         
         {/* ITIL Service Management Modules */}
         <SectionHeader title="Service Management" />
         <NavItem
           to="/problems"
-          label="Problem Management"
+          label="Problems"
           icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>}
           roles={['technician', 'manager', 'admin']}
         />
         
         <NavItem
           to="/changes"
-          label="Change Management"
+          label="Changes"
           icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" /></svg>}
           roles={['technician', 'manager', 'admin']}
         />
         
         <NavItem
           to="/improvements"
-          label="Improvement Management"
+          label="Improvements"
           icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z" clipRule="evenodd" /></svg>}
           roles={['manager', 'admin']}
         />
         
         <NavItem
           to="/services"
-          label="Service Catalog"
+          label="Self-Service"
           icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z" /></svg>}
         />
         
@@ -197,35 +232,6 @@ const Sidebar: React.FC = () => {
         
         {/* Admin and Manager only sections */}
         <SectionHeader title="Administration" />
-        <NavItem
-          to="/queues"
-          label="Queues"
-          icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>}
-          defaultOpen={location.pathname.startsWith('/queues/')}
-        >
-          {isLoadingQueues ? (
-            <div className="text-sm text-gray-500 py-2 px-4">Loading queues...</div>
-          ) : queues.length === 0 ? (
-            <div className="text-sm text-gray-500 py-2 px-4">No queues available</div>
-          ) : (
-            queues.map(queue => (
-              <Link
-                key={queue.id}
-                to={`/queues/${queue.id}`}
-                className={cn(
-                  'flex items-center px-4 py-2 text-sm rounded-md transition-colors',
-                  location.pathname === `/queues/${queue.id}`
-                    ? 'bg-primary/10 text-primary font-medium'
-                    : 'text-gray-600 hover:bg-gray-100'
-                )}
-              >
-                <span className="w-2 h-2 rounded-full bg-gray-400 mr-2"></span>
-                {queue.name}
-              </Link>
-            ))
-          )}
-        </NavItem>
-        
         <NavItem
           to="/reports"
           label="Reports & Analytics"

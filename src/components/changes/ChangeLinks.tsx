@@ -10,9 +10,9 @@ import {
   getChangeTicketLinks, 
   getChangeProblemLinks,
   linkChangeToTicket,
-  linkChangeToProblem,
-  unlinkChangeFromTicket,
-  unlinkChangeFromProblem
+  linkProblemToChange,
+  unlinkTicketFromChange,
+  unlinkProblemFromChange
 } from '../../services/changeService';
 import { getTicket } from '../../services/ticketService';
 import { getProblem } from '../../services/problemService';
@@ -140,14 +140,14 @@ const ChangeLinks: React.FC<ChangeLinksProps> = ({
           throw new Error('This ticket is already linked to this change');
         }
         
-        await linkChangeToTicket(change.id, linkId);
+        await linkChangeToTicket(change.id, linkId, userDetails?.id || '');
       } else {
         // Check if already linked
         if (problemLinks.some(link => link.problem_id === linkId)) {
           throw new Error('This problem is already linked to this change');
         }
         
-        await linkChangeToProblem(change.id, linkId);
+        await linkProblemToChange(change.id, linkId, userDetails?.id || '');
       }
       
       // Reset form and refresh links
@@ -167,7 +167,7 @@ const ChangeLinks: React.FC<ChangeLinksProps> = ({
     try {
       setIsSubmitting(true);
       
-      await unlinkChangeFromTicket(linkId);
+      await unlinkTicketFromChange(change.id, linkId);
       
       // Refresh links
       await fetchLinks();
@@ -184,7 +184,7 @@ const ChangeLinks: React.FC<ChangeLinksProps> = ({
     try {
       setIsSubmitting(true);
       
-      await unlinkChangeFromProblem(linkId);
+      await unlinkProblemFromChange(change.id, linkId);
       
       // Refresh links
       await fetchLinks();
@@ -299,7 +299,7 @@ const ChangeLinks: React.FC<ChangeLinksProps> = ({
                 <div className="flex space-x-3">
                   <Button
                     type="submit"
-                    variant="primary"
+                    variant="default"
                     disabled={isSubmitting}
                   >
                     {isSubmitting ? (

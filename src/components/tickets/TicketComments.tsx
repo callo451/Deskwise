@@ -3,6 +3,9 @@ import { getTicketComments, createTicketComment, updateTicketComment, deleteTick
 import { Button } from '../ui/Button';
 import { useAuth } from '../../contexts/AuthContext';
 import { TicketComment } from '../../types/database';
+import { generateCommentResponse } from '../../services/aiService';
+import { getTicketById } from '../../services/ticketService';
+import { SparklesIcon } from '@heroicons/react/24/outline';
 
 interface TicketCommentsProps {
   ticketId: string;
@@ -30,6 +33,10 @@ const TicketComments: React.FC<TicketCommentsProps> = ({ ticketId }) => {
   const [showInvisibleComments, setShowInvisibleComments] = useState(false);
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editedContent, setEditedContent] = useState('');
+  
+  // AI Response state
+  const [isGeneratingResponse, setIsGeneratingResponse] = useState(false);
+  const [responseError, setResponseError] = useState<string | null>(null);
 
   // Check if user can see internal comments
   const canViewInternal = userDetails && (
@@ -152,6 +159,29 @@ const TicketComments: React.FC<TicketCommentsProps> = ({ ticketId }) => {
       setIsSubmitting(false);
     }
   };
+  
+  const handleGenerateResponse = async () => {
+    if (!ticketId) return;
+    
+    setIsGeneratingResponse(true);
+    setResponseError(null);
+    
+    try {
+      // Fetch ticket details
+      const ticket = await getTicketById(ticketId);
+      
+      // Generate AI response
+      const response = await generateCommentResponse(ticket, comments as any);
+      
+      // Set the response in the comment input
+      setNewComment(response);
+    } catch (err: any) {
+      console.error('Error generating AI response:', err);
+      setResponseError(err.message || 'Failed to generate response');
+    } finally {
+      setIsGeneratingResponse(false);
+    }
+  };
 
   const formatUserName = (user: CommentWithUser['user']) => {
     if (user.first_name && user.last_name) {
@@ -226,16 +256,28 @@ const TicketComments: React.FC<TicketCommentsProps> = ({ ticketId }) => {
               </label>
             )}
           </div>
-          <Button type="submit" disabled={isSubmitting || !newComment.trim()}>
-            {isSubmitting ? 'Posting...' : 'Post Comment'}
-          </Button>
+          <div className="flex space-x-2">
+            <Button
+              type="button"
+              onClick={handleGenerateResponse}
+              disabled={isGeneratingResponse}
+              className="flex items-center space-x-1 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white shadow-md hover:shadow-lg transition-all duration-200"
+              size="sm"
+            >
+              <SparklesIcon className="h-4 w-4 mr-1" />
+              {isGeneratingResponse ? 'Generating...' : 'AI Response'}
+            </Button>
+            <Button type="submit" disabled={isSubmitting || !newComment.trim()}>
+              {isSubmitting ? 'Posting...' : 'Post Comment'}
+            </Button>
+          </div>
         </div>
       </form>
 
-      {/* Error message */}
-      {error && (
+      {/* Error messages */}
+      {(error || responseError) && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
-          {error}
+          {error || responseError}
         </div>
       )}
 

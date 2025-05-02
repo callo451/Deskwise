@@ -23,15 +23,13 @@ const Header: React.FC = () => {
   }, []);
 
   return (
-    <header className="bg-white border-b border-gray-200 shadow-sm fixed top-0 left-0 right-0 z-50">
-      <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center">
-          <Link to="/" className="text-xl font-bold text-primary">
-            Deskwise
-          </Link>
-        </div>
+    <header className="bg-white border-b border-gray-200 shadow-sm fixed top-0 left-0 right-0 z-50 px-4 py-3"> 
+      <div className="flex items-center justify-between w-full"> 
+        <Link to="/">
+          <img src="https://rqibbynjnfycbuersldk.supabase.co/storage/v1/object/public/backend-logos//deskwise-lightmode.png" alt="Deskwise Logo" style={{ height: '40px' }} /> {/* Adjust height as needed */}
+        </Link>
         
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center gap-4">
           {user ? (
             <>
               <div className="relative">

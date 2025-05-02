@@ -1,4 +1,9 @@
 import { supabase } from '../lib/supabase';
+import {
+  defaultTicketPriorities,
+  defaultTicketCategories,
+  defaultTicketStatuses
+} from '../lib/ticket-settings-templates'; // Import the defaults
 
 export interface TicketStatusItem {
   id: string;
@@ -329,4 +334,68 @@ export const deleteTicketStatus = async (id: string) => {
   }
 
   return true;
+};
+
+// --- Provisioning Defaults for New Tenants ---
+
+/**
+ * Provisions default ticket settings (priorities, categories, statuses)
+ * for a newly created tenant.
+ * Should be called during the sign-up process after tenant creation.
+ * 
+ * @param organisationId The UUID of the new tenant/organisation.
+ */
+export const provisionDefaultTicketSettings = async (organisationId: string): Promise<void> => {
+  console.log(`Provisioning default ticket settings for organisation: ${organisationId}`);
+
+  try {
+    // 1. Prepare data with the correct tenant_id
+    const prioritiesToInsert = defaultTicketPriorities.map(p => ({ 
+      ...p, 
+      tenant_id: organisationId 
+    }));
+    const categoriesToInsert = defaultTicketCategories.map(c => ({ 
+      ...c, 
+      tenant_id: organisationId 
+    }));
+    const statusesToInsert = defaultTicketStatuses.map(s => ({ 
+      ...s, 
+      tenant_id: organisationId 
+    }));
+
+    // 2. Perform insertions concurrently
+    const results = await Promise.allSettled([
+      supabase.from('ticket_priorities').insert(prioritiesToInsert),
+      supabase.from('ticket_categories').insert(categoriesToInsert),
+      supabase.from('ticket_statuses').insert(statusesToInsert),
+      // Add insert operations for default SLAs and Queues here if needed later
+    ]);
+
+    // 3. Check results and log errors
+    const errors: string[] = [];
+    results.forEach((result, index) => {
+      if (result.status === 'rejected') {
+        let tableName = '';
+        if (index === 0) tableName = 'ticket_priorities';
+        else if (index === 1) tableName = 'ticket_categories';
+        else if (index === 2) tableName = 'ticket_statuses';
+        // Add cases for SLAs/Queues if added
+        
+        console.error(`Error inserting default ${tableName}:`, result.reason);
+        errors.push(`Failed to insert default ${tableName}.`);
+      }
+    });
+
+    if (errors.length > 0) {
+      // Throw a consolidated error if any insertion failed
+      throw new Error(`Failed to provision some default ticket settings: ${errors.join(' ')}`);
+    }
+
+    console.log(`Successfully provisioned default ticket settings for organisation: ${organisationId}`);
+
+  } catch (error: any) {
+    console.error(`Error during provisionDefaultTicketSettings for ${organisationId}:`, error);
+    // Re-throw the error to be caught by the calling function (e.g., in SignUpForm)
+    throw error;
+  }
 };

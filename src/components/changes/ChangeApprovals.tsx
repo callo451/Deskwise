@@ -93,6 +93,7 @@ const ChangeApprovals: React.FC<ChangeApprovalsProps> = ({
         await createChangeApproval({
           change_id: change.id,
           approver_id: userDetails.id,
+          tenant_id: userDetails.tenant_id,
           status: 'approved',
           comments: comment || null
         });
@@ -127,6 +128,7 @@ const ChangeApprovals: React.FC<ChangeApprovalsProps> = ({
         await createChangeApproval({
           change_id: change.id,
           approver_id: userDetails.id,
+          tenant_id: userDetails.tenant_id,
           status: 'rejected',
           comments: comment || null
         });

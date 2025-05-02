@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { getQueues, createQueue, updateQueue, deleteQueue, QueueItem } from '../../services/queueService';
 import { Button } from '../ui/Button';
-import { PlusIcon, PencilIcon, TrashIcon, XMarkIcon, CheckIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, PencilIcon, TrashIcon, XMarkIcon, CheckIcon, UserGroupIcon } from '@heroicons/react/24/outline';
+import QueueAssignments from './QueueAssignments';
 
 const QueueSettings: React.FC = () => {
   const [queues, setQueues] = useState<QueueItem[]>([]);
@@ -9,6 +10,7 @@ const QueueSettings: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isAddingQueue, setIsAddingQueue] = useState(false);
   const [editingQueueId, setEditingQueueId] = useState<string | null>(null);
+  const [selectedQueueId, setSelectedQueueId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -127,6 +129,10 @@ const QueueSettings: React.FC = () => {
       setEditingQueueId(null);
     }
     resetForm();
+  };
+  
+  const handleManageAssignments = (queueId: string) => {
+    setSelectedQueueId(selectedQueueId === queueId ? null : queueId);
   };
 
   if (isLoading) {
@@ -255,41 +261,55 @@ const QueueSettings: React.FC = () => {
               </tr>
             ) : (
               queues.map(queue => (
-                <tr key={queue.id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {queue.name}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-500">
-                    {queue.description || '-'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      queue.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                    }`}>
-                      {queue.is_active ? 'Active' : 'Inactive'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <div className="flex justify-end space-x-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => startEditing(queue)}
-                        className="text-indigo-600 hover:text-indigo-900"
-                      >
-                        <PencilIcon className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDeleteQueue(queue.id)}
-                        className="text-red-600 hover:text-red-900"
-                      >
-                        <TrashIcon className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
+                <React.Fragment key={queue.id}>
+                  <tr>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {queue.name}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-500">
+                      {queue.description || '-'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        queue.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                      }`}>
+                        {queue.is_active ? 'Active' : 'Inactive'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <div className="flex space-x-2 justify-end">
+                        <button
+                          onClick={() => handleManageAssignments(queue.id)}
+                          className="text-indigo-600 hover:text-indigo-900 inline-flex items-center"
+                        >
+                          <UserGroupIcon className="h-4 w-4 mr-1" />
+                          {selectedQueueId === queue.id ? 'Hide Assignments' : 'Manage Assignments'}
+                        </button>
+                        <button
+                          onClick={() => startEditing(queue)}
+                          className="text-blue-600 hover:text-blue-900 inline-flex items-center"
+                        >
+                          <PencilIcon className="h-4 w-4 mr-1" />
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteQueue(queue.id)}
+                          className="text-red-600 hover:text-red-900 inline-flex items-center"
+                        >
+                          <TrashIcon className="h-4 w-4 mr-1" />
+                          Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                  {selectedQueueId === queue.id && (
+                    <tr>
+                      <td colSpan={4} className="px-0 py-0 border-t-0">
+                        <QueueAssignments queueId={queue.id} queueName={queue.name} />
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
               ))
             )}
           </tbody>

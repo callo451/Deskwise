@@ -17,72 +17,66 @@ const TicketSettings: React.FC = () => {
       <div className="mb-6">
         <div className="border-b border-gray-200">
           <nav className="-mb-px flex space-x-8">
-            <Button
-              variant="ghost"
-              className={`py-2 px-1 border-b-2 ${
+            <button
+              onClick={() => setActiveTab('priorities')}
+              className={`${
                 activeTab === 'priorities'
                   ? 'border-primary text-primary'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-              onClick={() => setActiveTab('priorities')}
+              } whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm`}
             >
               Priorities
-            </Button>
-            <Button
-              variant="ghost"
-              className={`py-2 px-1 border-b-2 ${
+            </button>
+            <button
+              onClick={() => setActiveTab('categories')}
+              className={`${
                 activeTab === 'categories'
                   ? 'border-primary text-primary'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-              onClick={() => setActiveTab('categories')}
+              } whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm`}
             >
               Categories
-            </Button>
-            <Button
-              variant="ghost"
-              className={`py-2 px-1 border-b-2 ${
+            </button>
+            <button
+              onClick={() => setActiveTab('statuses')}
+              className={`${
                 activeTab === 'statuses'
                   ? 'border-primary text-primary'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-              onClick={() => setActiveTab('statuses')}
+              } whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm`}
             >
               Statuses
-            </Button>
-            <Button
-              variant="ghost"
-              className={`py-2 px-1 border-b-2 ${
+            </button>
+            <button
+              onClick={() => setActiveTab('slas')}
+              className={`${
                 activeTab === 'slas'
                   ? 'border-primary text-primary'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-              onClick={() => setActiveTab('slas')}
+              } whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm`}
             >
               SLAs
-            </Button>
-            <Button
-              variant="ghost"
-              className={`py-2 px-1 border-b-2 ${
+            </button>
+            <button
+              onClick={() => setActiveTab('id_format')}
+              className={`${
                 activeTab === 'id_format'
                   ? 'border-primary text-primary'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-              onClick={() => setActiveTab('id_format')}
+              } whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm`}
             >
               Ticket ID Format
-            </Button>
-            <Button
-              variant="ghost"
-              className={`py-2 px-1 border-b-2 ${
+            </button>
+            <button
+              onClick={() => setActiveTab('queues')}
+              className={`${
                 activeTab === 'queues'
                   ? 'border-primary text-primary'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-              onClick={() => setActiveTab('queues')}
+              } whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm`}
             >
               Queues
-            </Button>
+            </button>
           </nav>
         </div>
       </div>

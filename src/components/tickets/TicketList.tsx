@@ -2,8 +2,22 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { getTickets } from '../../services/ticketService';
 import { getTicketPriorities, getTicketStatuses, getTicketCategories } from '../../services/settingsService';
+import { fetchTicketIdSettings } from '../../services/ticketSettingsService';
+
 import { Ticket } from '../../types/database';
 import { Button } from '../ui/Button';
+import { useAuth } from '../../contexts/AuthContext';
+import { supabase } from '../../lib/supabase';
+import { formatTicketIdWithSettings } from '../../utils/ticketIdFormatter';
+import { 
+  // DocumentIcon, 
+  // ClockIcon, 
+  // CheckCircleIcon,
+  // XCircleIcon,
+  // ExclamationTriangleIcon,
+  TrashIcon
+} from '@heroicons/react/24/outline';
+import { formatDistanceToNow } from 'date-fns';
 
 interface TicketWithDetails extends Ticket {
   priority_details?: {
@@ -20,6 +34,13 @@ interface TicketWithDetails extends Ticket {
     id: string;
     name: string;
   };
+  assigned_to_user?: {
+    id: string;
+    first_name: string | null;
+    last_name: string | null;
+    email: string;
+  };
+  numeric_id?: number;
 }
 
 interface TicketListProps {
@@ -43,6 +64,8 @@ const TicketList: React.FC<TicketListProps> = ({
   showPagination = true,
   initialFilters = {},
 }) => {
+  const { userDetails } = useAuth();
+  const isAdmin = userDetails?.role === 'admin';
   const [tickets, setTickets] = useState<TicketWithDetails[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -51,6 +74,11 @@ const TicketList: React.FC<TicketListProps> = ({
   const [priorities, setPriorities] = useState<any[]>([]);
   const [statuses, setStatuses] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
+  const [ticketIdSettings, setTicketIdSettings] = useState<{
+    prefix: string;
+    suffix: string;
+    padding_length: number;
+  } | null>(null);
   
   const [filters, setFilters] = useState({
     status_id: initialFilters.status_id || undefined,
@@ -65,7 +93,20 @@ const TicketList: React.FC<TicketListProps> = ({
   useEffect(() => {
     fetchTickets();
     fetchSettings();
-  }, [page, filters]);
+    if (userDetails?.tenant_id) {
+      fetchTicketIdSettings(userDetails.tenant_id)
+        .then(settings => {
+          if (settings) {
+            setTicketIdSettings({
+              prefix: settings.prefix,
+              suffix: settings.suffix,
+              padding_length: settings.padding_length
+            });
+          }
+        })
+        .catch(err => console.error('Error fetching ticket ID settings:', err));
+    }
+  }, [page, filters, userDetails?.tenant_id]);
 
   const fetchSettings = async () => {
     try {
@@ -94,11 +135,47 @@ const TicketList: React.FC<TicketListProps> = ({
         offset,
       });
       
-      setTickets(fetchedTickets as Ticket[]);
+      setTickets(fetchedTickets as TicketWithDetails[]);
       setTotalCount(count || 0);
     } catch (err: any) {
       console.error('Error fetching tickets:', err);
       setError(err.message || 'Failed to fetch tickets');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const deleteTicket = async (ticketId: string) => {
+    if (!isAdmin) return;
+    
+    // Show confirmation dialog
+    if (!window.confirm('Are you sure you want to delete this ticket? This action cannot be undone.')) {
+      return;
+    }
+    
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      // Simple direct deletion
+      const { error } = await supabase
+        .from('tickets')
+        .delete()
+        .eq('id', ticketId);
+      
+      if (error) {
+        throw error;
+      }
+      
+      // Refresh the ticket list
+      fetchTickets();
+      // Show success message
+      alert('Ticket deleted successfully');
+    } catch (err: any) {
+      console.error('Error deleting ticket:', err);
+      setError(err.message || 'Failed to delete ticket');
+      // Show error message to user
+      alert(`Failed to delete ticket: ${err.message || 'Unknown error'}`);
     } finally {
       setIsLoading(false);
     }
@@ -199,119 +276,197 @@ const TicketList: React.FC<TicketListProps> = ({
       )}
 
       {isLoading ? (
-        <div className="p-6 text-center">
+        <div className="p-8 text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
           <p className="mt-2 text-sm text-gray-500">Loading tickets...</p>
         </div>
       ) : error ? (
-        <div className="p-6 text-center">
-          <p className="text-red-500">{error}</p>
-          <Button className="mt-4" onClick={fetchTickets}>
+        <div className="p-8 text-center text-red-500">
+          <p>{error}</p>
+          <Button variant="outline" size="sm" onClick={fetchTickets} className="mt-2">
             Retry
           </Button>
         </div>
       ) : tickets.length === 0 ? (
-        <div className="p-6 text-center">
-          <p className="text-gray-500">No tickets found.</p>
-          <Button className="mt-4" asChild>
-            <Link to="/tickets/new">Create Ticket</Link>
-          </Button>
+        <div className="p-8 text-center text-gray-500">
+          <p>No tickets found.</p>
         </div>
       ) : (
-        <>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 text-xs uppercase text-gray-500">
-                <tr>
-                  <th className="px-6 py-3 text-left">ID</th>
-                  <th className="px-6 py-3 text-left">Title</th>
-                  <th className="px-6 py-3 text-left">Status</th>
-                  <th className="px-6 py-3 text-left">Priority</th>
-                  <th className="px-6 py-3 text-left">Created</th>
-                  <th className="px-6 py-3 text-left">Actions</th>
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  ID
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Ticket
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Priority
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Category
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Assigned To
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Created
+                </th>
+                {isAdmin && (
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                )}
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {tickets.map((ticket) => (
+                <tr key={ticket.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <Link to={`/tickets/${ticket.id}`} className="text-blue-600 hover:text-blue-800">
+                      {ticketIdSettings
+                        ? formatTicketIdWithSettings(ticket.id, ticketIdSettings)
+                        : ticket.id.substring(0, 8)}
+                    </Link>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-start">
+                      <div>
+                        <Link to={`/tickets/${ticket.id}`} className="text-sm font-medium text-blue-600 hover:text-blue-800">
+                          {ticket.title}
+                        </Link>
+                        <p className="text-xs text-gray-500 mt-1 line-clamp-1">
+                          {ticket.description}
+                        </p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {ticket.status_details ? (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium" style={{
+                        backgroundColor: `${ticket.status_details.color}20`,
+                        color: ticket.status_details.color
+                      }}>
+                        <span>{ticket.status_details.name}</span>
+                      </span>
+                    ) : '-'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {ticket.priority_details ? (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium" style={{
+                        backgroundColor: `${ticket.priority_details.color}20`,
+                        color: ticket.priority_details.color
+                      }}>
+                        {ticket.priority_details.name}
+                      </span>
+                    ) : '-'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {ticket.category ? ticket.category.name : '-'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {ticket.assigned_to_user ? (
+                      <span>
+                        {ticket.assigned_to_user.first_name || ''} {ticket.assigned_to_user.last_name || ''}
+                      </span>
+                    ) : (
+                      <span className="text-gray-400">Unassigned</span>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {formatDistanceToNow(new Date(ticket.created_at), { addSuffix: true })}
+                  </td>
+                  {isAdmin && (
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <button
+                        onClick={() => deleteTicket(ticket.id)}
+                        className="text-red-600 hover:text-red-900"
+                        title="Delete Ticket"
+                      >
+                        <TrashIcon className="h-5 w-5" />
+                      </button>
+                    </td>
+                  )}
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {tickets.map((ticket) => (
-                  <tr key={ticket.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {ticket.id.substring(0, 8)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      <Link to={`/tickets/${ticket.id}`} className="hover:text-primary">
-                        {ticket.title}
-                      </Link>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      {ticket.status_details ? (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
-                          style={{
-                            backgroundColor: `${ticket.status_details.color}20`, // 20 is for opacity
-                            color: ticket.status_details.color
-                          }}>
-                          {ticket.status_details.name}
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                          {ticket.status || 'Unknown'}
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      {ticket.priority_details ? (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
-                          style={{
-                            backgroundColor: `${ticket.priority_details.color}20`, // 20 is for opacity
-                            color: ticket.priority_details.color
-                          }}>
-                          {ticket.priority_details.name}
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                          {ticket.priority || 'Unknown'}
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(ticket.created_at).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <Button variant="ghost" size="sm" asChild>
-                        <Link to={`/tickets/${ticket.id}`}>View</Link>
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      
+      {showPagination && totalPages > 1 && (
+        <div className="px-6 py-4 flex items-center justify-between border-t border-gray-200">
+          <div className="flex-1 flex justify-between sm:hidden">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage(page > 1 ? page - 1 : 1)}
+              disabled={page === 1}
+            >
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage(page < totalPages ? page + 1 : totalPages)}
+              disabled={page === totalPages}
+            >
+              Next
+            </Button>
           </div>
-          
-          {showPagination && totalPages > 1 && (
-            <div className="px-6 py-4 flex items-center justify-between border-t border-gray-100">
-              <div className="text-sm text-gray-500">
-                Showing {(page - 1) * limit + 1} to {Math.min(page * limit, totalCount)} of {totalCount} tickets
-              </div>
-              <div className="flex space-x-2">
+          <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm text-gray-700">
+                Showing <span className="font-medium">{(page - 1) * limit + 1}</span> to{' '}
+                <span className="font-medium">{Math.min(page * limit, totalCount)}</span> of{' '}
+                <span className="font-medium">{totalCount}</span> results
+              </p>
+            </div>
+            <div>
+              <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  className="rounded-l-md"
+                  onClick={() => setPage(page > 1 ? page - 1 : 1)}
                   disabled={page === 1}
                 >
                   Previous
                 </Button>
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  const pageNum = page <= 3 ? i + 1 : page + i - 2;
+                  if (pageNum <= totalPages) {
+                    return (
+                      <Button
+                        key={pageNum}
+                        variant={pageNum === page ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setPage(pageNum)}
+                      >
+                        {pageNum}
+                      </Button>
+                    );
+                  }
+                  return null;
+                })}
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                  className="rounded-r-md"
+                  onClick={() => setPage(page < totalPages ? page + 1 : totalPages)}
                   disabled={page === totalPages}
                 >
                   Next
                 </Button>
-              </div>
+              </nav>
             </div>
-          )}
-        </>
+          </div>
+        </div>
       )}
     </div>
   );
