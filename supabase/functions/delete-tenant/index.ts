@@ -76,10 +76,12 @@ serve(async (req: Request) => {
     // IMPORTANT: Update this list with ALL tables related to a tenant!
     const tablesToDeleteFrom = [
       'tickets', 'ticket_comments', // Example ticket tables
-      // 'service_form_submissions', // REMOVED: Incorrect name. Add the correct table name for form submissions!
-      'service_forms', 'service_catalog_services', 'service_catalog_categories', // Example SC tables
+      'ticket_history', // Added based on ticketService.ts review
+      // 'service_form_submissions', // REMOVED: Still need to find the actual submission table!
+      'service_forms', 'service_catalog_items', 'service_catalog_categories', // Added SC definition tables
       'user_profiles', // Profiles linked to users in the tenant
-      // Add ALL other tables that have a tenant_id or related foreign key
+      // TODO: Add ALL other tables that have a tenant_id or related foreign key
+      // TODO: Consider 'service_catalog_forms' - it uses 'organization_id'. If needed, add it and modify the query below to use .eq('organization_id', tenantId) for that table.
     ];
 
     for (const table of tablesToDeleteFrom) {
